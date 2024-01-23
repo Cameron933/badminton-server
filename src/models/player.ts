@@ -2,11 +2,9 @@ const mongoose = require("mongoose");
 
 const playerSchema = new mongoose.Schema({
   name: String,
-  wins: Number,
-  losses: Number,
-  points: Number,
+  primaryPoints: { type: Number, default: 0 },
+  secondaryPoints: { type: Number, default: 0 },
+  previousOpponents: [String],
 });
 
-const Player = mongoose.model("Player", playerSchema);
-
-module.exports = Player;
+module.exports = mongoose.model("Player", playerSchema);
