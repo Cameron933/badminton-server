@@ -1,6 +1,6 @@
 import express, { Express, Request, Response } from "express";
-import playerRoutes from "./routes/playerRoutes";
 import dotenv from "dotenv";
+const tournamentRoutes = require("./routes/tournamentRoutes");
 
 dotenv.config();
 
@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000;
 
 const mongoose = require("mongoose");
 
-mongoose.connect("mongodb://localhost:27017/myDatabase", {
+mongoose.connect(process.env.DATABASE_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -22,7 +22,7 @@ db.once("open", function () {
 
 app.use(express.json());
 
-app.use("/players", playerRoutes);
+app.use("/players", tournamentRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");

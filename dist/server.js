@@ -5,9 +5,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const tournamentRoutes = require("./routes/tournamentRoutes");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
+const mongoose = require("mongoose");
+mongoose.connect(process.env.DATABASE_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", function () {
+    console.log("We're connected!");
+});
+app.use(express_1.default.json());
+app.use("/players", tournamentRoutes);
 app.get("/", (req, res) => {
     res.send("Express + TypeScript Server");
 });
