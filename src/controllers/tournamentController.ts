@@ -41,14 +41,38 @@ exports.getRankings = async (req: Request, res: Response) => {
 };
 
 exports.getPairings = async (req: Request, res: Response) => {
-  const players = await Player.find({}).sort({
-    primaryPoints: -1,
-    secondaryPoints: -1,
-  });
+  try {
+    const players = await Player.find({}).sort({
+      primaryPoints: -1,
+      secondaryPoints: -1,
+    });
+    let pairings = [];
+    let pairedPlayers = new Set();
 
-  let pairings: any = [];
-  // Pairing logic to be implemented
-  // ...
+    for (let i = 0; i < players.length; i++) {
+      if (pairedPlayers.has(players[i].name)) continue;
 
-  res.status(200).json(pairings);
+      for (let j = i + 1; j < players.length; j++) {
+        if (pairedPlayers.has(players[j].name)) continue;
+
+        const pointDifference = Math.abs(
+          players[i].primaryPoints - players[j].primaryPoints
+        );
+        const haveFacedBefore = players[i].previousOpponents.includes(
+          players[j].name
+        );
+
+        if (pointDifference <= 10 && !haveFacedBefore) {
+          pairings.push({ player1: players[i].name, player2: players[j].name });
+          pairedPlayers.add(players[i].name);
+          pairedPlayers.add(players[j].name);
+          break;
+        }
+      }
+    }
+
+    res.status(200).json(pairings);
+  } catch (error: any) {
+    res.status(500).send(error.message);
+  }
 };
