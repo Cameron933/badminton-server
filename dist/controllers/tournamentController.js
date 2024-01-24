@@ -9,25 +9,34 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const Player = require("../models/Player");
+const Player = require("../models/player");
 const Match = require("../models/Match");
+function findOrCreatePlayer(playerName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let player = yield Player.findOne({ name: playerName });
+        if (!player) {
+            player = yield Player.create({ name: playerName, primaryPoints: 0 });
+        }
+        return player;
+    });
+}
 exports.addMatchResult = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { player1, player2, results } = req.body;
+    if (!results || !Array.isArray(results)) {
+        // console.log(req.body);
+        return res.status(400).send("Invalid request data");
+    }
     // Update Match record
     const newMatch = new Match({ player1, player2, results });
     yield newMatch.save();
-    // Update Player records
     results.forEach((result) => __awaiter(void 0, void 0, void 0, function* () {
-        const winner = yield Player.findOne({ name: result.winner });
-        const loser = yield Player.findOne({
-            name: result.winner === player1 ? player2 : player1,
-        });
-        // Update primary points
+        const winner = yield findOrCreatePlayer(result.winner);
+        const loser = yield findOrCreatePlayer(result.winner === player1 ? player2 : player1);
         winner.primaryPoints += 1;
-        // Update secondary points
         winner.secondaryPoints += result.scoreDifference;
         loser.secondaryPoints -= result.scoreDifference;
-        // Save updates
+        winner.previousOpponents.push(loser.name);
+        loser.previousOpponents.push(winner.name);
         yield winner.save();
         yield loser.save();
     }));

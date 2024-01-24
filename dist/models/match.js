@@ -7,7 +7,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const matchSchema = new mongoose_1.default.Schema({
     player1: String,
     player2: String,
-    result: [
+    results: [
         {
             winner: String,
             scoreDifference: Number,

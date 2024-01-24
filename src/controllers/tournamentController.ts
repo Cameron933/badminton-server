@@ -1,30 +1,41 @@
 import { Request, Response } from "express";
 
-const Player = require("../models/Player");
+const Player = require("../models/player");
 const Match = require("../models/Match");
+
+async function findOrCreatePlayer(playerName: string) {
+  let player = await Player.findOne({ name: playerName });
+  if (!player) {
+    player = await Player.create({ name: playerName, primaryPoints: 0 });
+  }
+  return player;
+}
 
 exports.addMatchResult = async (req: Request, res: Response) => {
   const { player1, player2, results } = req.body;
+
+  if (!results || !Array.isArray(results)) {
+    // console.log(req.body);
+    return res.status(400).send("Invalid request data");
+  }
 
   // Update Match record
   const newMatch = new Match({ player1, player2, results });
   await newMatch.save();
 
-  // Update Player records
   results.forEach(async (result: any) => {
-    const winner = await Player.findOne({ name: result.winner });
-    const loser = await Player.findOne({
-      name: result.winner === player1 ? player2 : player1,
-    });
+    const winner = await findOrCreatePlayer(result.winner);
+    const loser = await findOrCreatePlayer(
+      result.winner === player1 ? player2 : player1
+    );
 
-    // Update primary points
     winner.primaryPoints += 1;
-
-    // Update secondary points
     winner.secondaryPoints += result.scoreDifference;
     loser.secondaryPoints -= result.scoreDifference;
 
-    // Save updates
+    winner.previousOpponents.push(loser.name);
+    loser.previousOpponents.push(winner.name);
+
     await winner.save();
     await loser.save();
   });
@@ -54,6 +65,8 @@ exports.getPairings = async (req: Request, res: Response) => {
 
       for (let j = i + 1; j < players.length; j++) {
         if (pairedPlayers.has(players[j].name)) continue;
+
+        if (players[i].name === players[j].name) continue;
 
         const pointDifference = Math.abs(
           players[i].primaryPoints - players[j].primaryPoints

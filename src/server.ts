@@ -1,10 +1,12 @@
-import express, { Express, Request, Response } from "express";
+import { Express, Request, Response } from "express";
+const express = require("express");
 import dotenv from "dotenv";
 const tournamentRoutes = require("./routes/tournamentRoutes");
 
 dotenv.config();
 
 const app: Express = express();
+app.use(express.json());
 const port = process.env.PORT || 3000;
 
 const mongoose = require("mongoose");
@@ -17,9 +19,7 @@ db.once("open", function () {
   console.log("We're connected!");
 });
 
-app.use(express.json());
-
-app.use("/players", tournamentRoutes);
+app.use(tournamentRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Express + TypeScript Server");
