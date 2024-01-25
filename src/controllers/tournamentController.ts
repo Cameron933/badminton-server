@@ -79,11 +79,20 @@ exports.addMatchResult = async (req: Request, res: Response) => {
 };
 
 exports.getRankings = async (req: Request, res: Response) => {
-  const players = await Player.find({}).sort({
-    primaryPoints: -1,
-    secondaryPoints: -1,
-  });
-  res.status(200).json(players);
+  try {
+    const players = await Player.find({}).sort({
+      primaryPoints: -1,
+      secondaryPoints: -1,
+    });
+
+    if (players.length === 0) {
+      return res.status(200).send("No data found!");
+    }
+
+    res.status(200).json(players);
+  } catch (error: any) {
+    res.status(500).send(error.message);
+  }
 };
 
 exports.getPairings = async (req: Request, res: Response) => {
@@ -92,31 +101,42 @@ exports.getPairings = async (req: Request, res: Response) => {
       primaryPoints: -1,
       secondaryPoints: -1,
     });
+
+    if (players.length === 0) {
+      return res.status(200).send("No player data!");
+    }
+
     let pairings = [];
     let pairedPlayers = new Set();
 
     for (let i = 0; i < players.length; i++) {
-      if (pairedPlayers.has(players[i].name)) continue;
+      if (pairedPlayers.has(players[i].playerId)) continue;
 
+      let foundPair = false;
       for (let j = i + 1; j < players.length; j++) {
-        if (pairedPlayers.has(players[j].name)) continue;
-
-        if (players[i].name === players[j].name) continue;
+        if (pairedPlayers.has(players[j].playerId)) continue;
 
         const pointDifference = Math.abs(
           players[i].primaryPoints - players[j].primaryPoints
         );
         const haveFacedBefore = players[i].previousOpponents.includes(
-          players[j].name
+          players[j].playerId
         );
 
         if (pointDifference <= 10 && !haveFacedBefore) {
           pairings.push({ player1: players[i].name, player2: players[j].name });
-          pairedPlayers.add(players[i].name);
-          pairedPlayers.add(players[j].name);
+          pairedPlayers.add(players[i].playerId);
+          pairedPlayers.add(players[j].playerId);
+          foundPair = true;
           break;
         }
       }
+
+      if (!foundPair) break;
+    }
+
+    if (pairings.length === 0) {
+      return res.status(200).send("All players have faced each other before");
     }
 
     res.status(200).json(pairings);
