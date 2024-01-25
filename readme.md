@@ -26,6 +26,8 @@ Functions:
   - Call calculatePoints and update player records.
 
 - getRankings():
+
   - Return rankings based on current player data.
+
 - getNextRoundPairings():
   - Use rankPlayers and generatePairings to determine matchups.

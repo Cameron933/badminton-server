@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 
 const Player = require("../models/player");
 const Match = require("../models/Match");
@@ -6,39 +7,73 @@ const Match = require("../models/Match");
 async function findOrCreatePlayer(playerName: string) {
   let player = await Player.findOne({ name: playerName });
   if (!player) {
-    player = await Player.create({ name: playerName, primaryPoints: 0 });
+    player = new Player({
+      playerId: new mongoose.Types.ObjectId(),
+      name: playerName,
+      primaryPoints: 0,
+      wins: 0,
+      losses: 0,
+      secondaryPoints: 0,
+      previousOpponents: [],
+      matchIds: [],
+    });
+    await player.save();
   }
   return player;
 }
 
 exports.addMatchResult = async (req: Request, res: Response) => {
-  const { player1, player2, results } = req.body;
+  const { player1, player2, rounds } = req.body;
 
-  if (!results || !Array.isArray(results)) {
-    // console.log(req.body);
+  if (!rounds || !Array.isArray(rounds) || rounds.length !== 2) {
     return res.status(400).send("Invalid request data");
   }
 
-  // Update Match record
-  const newMatch = new Match({ player1, player2, results });
+  const newMatch = new Match({
+    matchId: new mongoose.Types.ObjectId(),
+    player1,
+    player2,
+    rounds,
+  });
   await newMatch.save();
 
-  results.forEach(async (result: any) => {
-    const winner = await findOrCreatePlayer(result.winner);
-    const loser = await findOrCreatePlayer(
-      result.winner === player1 ? player2 : player1
-    );
+  let player1Wins = 0;
+  let player2Wins = 0;
 
-    winner.primaryPoints += 1;
-    winner.secondaryPoints += result.scoreDifference;
-    loser.secondaryPoints -= result.scoreDifference;
-
-    winner.previousOpponents.push(loser.name);
-    loser.previousOpponents.push(winner.name);
-
-    await winner.save();
-    await loser.save();
+  rounds.forEach((round) => {
+    if (round.player1Score > round.player2Score) player1Wins++;
+    else player2Wins++;
   });
+
+  const winnerName = player1Wins > player2Wins ? player1 : player2;
+  const loserName = winnerName === player1 ? player2 : player1;
+
+  const winner = await findOrCreatePlayer(winnerName);
+  const loser = await findOrCreatePlayer(loserName);
+
+  winner.wins += 1;
+  loser.losses += 1;
+  winner.primaryPoints += 1;
+
+  rounds.forEach((round) => {
+    const scoreDifference = Math.abs(round.player1Score - round.player2Score);
+    if (winnerName === player1 && round.player1Score > round.player2Score) {
+      winner.secondaryPoints += scoreDifference;
+      loser.secondaryPoints -= scoreDifference;
+    } else if (
+      winnerName === player2 &&
+      round.player2Score > round.player1Score
+    ) {
+      winner.secondaryPoints += scoreDifference;
+      loser.secondaryPoints -= scoreDifference;
+    }
+  });
+
+  winner.previousOpponents.push(loser.name);
+  loser.previousOpponents.push(winner.name);
+
+  await winner.save();
+  await loser.save();
 
   res.status(200).send("Match results added successfully.");
 };
