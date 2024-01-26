@@ -1,11 +1,15 @@
 import { Express, Request, Response } from "express";
-const express = require("express");
 import dotenv from "dotenv";
-const tournamentRoutes = require("./routes/tournamentRoutes");
+
+const express = require("express");
+const app: Express = express();
 
 dotenv.config();
 
-const app: Express = express();
+const cors = require("cors");
+const tournamentRoutes = require("./routes/tournamentRoutes");
+app.use(cors());
+
 app.use(express.json());
 const port = process.env.PORT || 3000;
 
