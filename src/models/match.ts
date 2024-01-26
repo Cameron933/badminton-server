@@ -9,7 +9,7 @@ const matchSchema = new mongoose.Schema({
   matchId: mongoose.Schema.Types.ObjectId,
   player1: String,
   player2: String,
-  rounds: [gameResultSchema],
+  rounds: [gameResultSchema, gameResultSchema],
 });
 
 module.exports = mongoose.model("Match", matchSchema);

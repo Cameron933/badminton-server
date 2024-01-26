@@ -3,11 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express = require("express");
 const dotenv_1 = __importDefault(require("dotenv"));
-const tournamentRoutes = require("./routes/tournamentRoutes");
-dotenv_1.default.config();
+const express = require("express");
 const app = express();
+dotenv_1.default.config();
+const cors = require("cors");
+const tournamentRoutes = require("./routes/tournamentRoutes");
+app.use(cors());
 app.use(express.json());
 const port = process.env.PORT || 3000;
 const mongoose = require("mongoose");
